@@ -250,5 +250,3 @@ def send_comment_email(data: commentSchema):
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e))
-
-handler = Mangum(app)
