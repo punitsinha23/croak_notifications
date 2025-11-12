@@ -25,7 +25,9 @@ PASS = os.getenv("PASSWORD")
 #SIGNUP EMAIL
 
 
-
+@app.get("/")
+def home():
+    return {"message": "API working"}
 # ---------------------------
 # FOLLOW EMAIL
 # ---------------------------
