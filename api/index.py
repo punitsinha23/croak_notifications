@@ -5,7 +5,7 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 import os
 from fastapi.middleware.cors import CORSMiddleware
-from mangum import Mangum
+import time
 
 load_dotenv()
 
@@ -250,3 +250,33 @@ def send_comment_email(data: commentSchema):
     except Exception as e:
 
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+def send_single_email(to, subject, message):
+    msg = EmailMessage()
+    msg["From"] = EMAIL
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.set_content(message)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(EMAIL, PASS)
+        smtp.send_message(msg)
+
+    time.sleep(1)  
+
+    
+class BroadcastSchema(BaseModel):
+    subject: str
+    message: str
+
+@app.post("/send-broadcast")
+def send_broadcast(data: BroadcastSchema):
+    import requests
+    users = requests.get("http://localhost/api/users-emails").json()
+
+    for user in users:
+        send_single_email(user["email"], data.subject, data.message)
+
+    return {"status": "queued"}
