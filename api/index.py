@@ -271,12 +271,12 @@ class BroadcastSchema(BaseModel):
     subject: str
     message: str
 
-@app.post("/send-broadcast")
+'''@app.post("/send-broadcast")
 def send_broadcast(data: BroadcastSchema):
     import requests
-    users = requests.get("http://localhost/api/users-emails").json()
+    users = requests.get("https://localhost/api/users-emails").json()
 
     for user in users:
         send_single_email(user["email"], data.subject, data.message)
 
-    return {"status": "queued"}
+    return {"status": "queued"}'''
