@@ -267,16 +267,35 @@ def send_single_email(to, subject, message):
     time.sleep(1)  
 
     
-class BroadcastSchema(BaseModel):
+class BulkEmailSchema(BaseModel):
     subject: str
     message: str
+    recipients: list[EmailStr]
 
-'''@app.post("/send-broadcast")
-def send_broadcast(data: BroadcastSchema):
-    import requests
-    users = requests.get("https://localhost/api/users-emails").json()
+@app.post("/send-bulk")
+def send_bulk(data: BulkEmailSchema):
+    sent = 0
+    failed = []
 
-    for user in users:
-        send_single_email(user["email"], data.subject, data.message)
+    for email in data.recipients:
+        try:
+            msg = EmailMessage()
+            msg["From"] = EMAIL
+            msg["To"] = email
+            msg["Subject"] = data.subject
+            msg.set_content(data.message)
 
-    return {"status": "queued"}'''
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                smtp.login(EMAIL, PASS)
+                smtp.send_message(msg)
+
+            sent += 1
+
+        except Exception as e:
+            failed.append({"email": email, "error": str(e)})
+
+    return {
+        "sent": sent,
+        "failed": failed,
+        "total": len(data.recipients)
+    }
