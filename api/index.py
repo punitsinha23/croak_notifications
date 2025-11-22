@@ -248,9 +248,47 @@ def send_comment_email(data: commentSchema):
             smtp.send_message(msg)
         return {"status": "success", "message": f"Comment notification sent to {data.to}"}
     except Exception as e:
-
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------
+# QUEUED EMAIL (for email queue system)
+# ---------------------------
+class QueuedEmailSchema(BaseModel):
+    to: EmailStr
+    subject: str
+    html: str
+    text: str
+
+@app.post("/send-queued-email")
+def send_queued_email(data: QueuedEmailSchema):
+    """
+    Send a queued email from the Django email queue system
+    This endpoint is called by the email queue processor
+    """
+    try:
+        msg = EmailMessage()
+        msg["From"] = EMAIL
+        msg["To"] = data.to
+        msg["Subject"] = data.subject
+        
+        # Set plain text content
+        msg.set_content(data.text)
+        
+        # Add HTML alternative
+        msg.add_alternative(data.html, subtype="html")
+        
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(EMAIL, PASS)
+            smtp.send_message(msg)
+        
+        return {
+            "status": "success",
+            "message": f"Email sent to {data.to}"
+        }
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 
 def send_single_email(to, subject, message):
