@@ -337,3 +337,65 @@ def send_bulk(data: BulkEmailSchema):
         "failed": failed,
         "total": len(data.recipients)
     }
+
+
+# ---------------------------
+# NEW POST FROM FOLLOWING EMAIL
+# ---------------------------
+class NewPostSchema(BaseModel):
+    to: EmailStr
+    author_name: str
+    author_username: str
+    post_preview: str
+    post_url: str
+    has_media: bool = False
+
+@app.post("/send-new-post-notification")
+def send_new_post_notification(data: NewPostSchema):
+    try:
+        msg = EmailMessage()
+        msg["From"] = EMAIL
+        msg["To"] = data.to
+        msg["Subject"] = f"📝 {data.author_name} just posted on Croak!"
+
+        plain_text = f"{data.author_name} (@{data.author_username}) posted: {data.post_preview}"
+
+        media_indicator = ""
+        if data.has_media:
+            media_indicator = '<p style="color: #10b981; font-size: 14px; margin: 10px 0;">📷 Includes media</p>'
+
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; background-color:#f7f7f7; padding:20px;">
+                <div style="max-width:600px; margin:auto; background:white; border-radius:10px; padding:20px;">
+                    <h2 style="color:#333;">📝 New Post from @{data.author_username}!</h2>
+                    <p style="font-size:16px; color:#444;">
+                        <strong>{data.author_name}</strong> just shared something new on Croak:
+                    </p>
+                    <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 16px; line-height: 1.6;">{data.post_preview}</p>
+                        {media_indicator}
+                    </div>
+                    <p style="color: #6b7280;">Don't miss out on the conversation!</p>
+                    <a href="{data.post_url}" style="display:inline-block; padding:12px 24px; background-color:#10b981; color:#ffffff; text-decoration:none; border-radius:6px; margin:20px 0;">View Post</a>
+                    <hr style="border:none; border-top:1px solid #eee;">
+                    <p style="font-size:14px; color:#777;">
+                        Keep croaking, keep connecting! 💚
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.set_content(plain_text)
+        msg.add_alternative(html_content, subtype="html")
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(EMAIL, PASS)
+            smtp.send_message(msg)
+
+        return {"status": "success", "message": f"New post notification sent to {data.to}"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
