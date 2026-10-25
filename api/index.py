@@ -1,26 +1,28 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from html import escape
+import hmac
 from pydantic import BaseModel, EmailStr
 import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
 import os
-from fastapi.middleware.cors import CORSMiddleware
 import time
 
 load_dotenv()
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], 
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 EMAIL = os.getenv("EMAIL")
 PASS = os.getenv("PASSWORD")
+NOTIFY_SECRET = os.getenv("NOTIFICATIONS_SECRET")
+
+
+def require_notify_secret(request: Request, x_notify_secret: str = Header(default="")):
+    if request.url.path == "/":
+        return
+    if not NOTIFY_SECRET or not hmac.compare_digest(x_notify_secret.encode(), NOTIFY_SECRET.encode()):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+app = FastAPI(dependencies=[Depends(require_notify_secret)], docs_url=None, redoc_url=None, openapi_url=None)
 
 #SIGNUP EMAIL
 
@@ -186,7 +188,7 @@ def send_signup_email(data: signUpSchema):
         <html>
             <body style="font-family: Arial, sans-serif; background-color:#f7f7f7; padding:20px;">
                 <div style="max-width:600px; margin:auto; background:white; border-radius:10px; padding:20px;">
-                    <h2 style="color:#333;">Welcome Aboard, {data.username}!</h2>
+                    <h2 style="color:#333;">Welcome Aboard, {escape(data.username)}!</h2>
                     <p style="font-size:16px; color:#444;">
                         We're thrilled to have you join the Crock community! 🚀
                     </p>
@@ -229,10 +231,10 @@ def send_comment_email(data: commentSchema):
                 <div style="max-width:600px; margin:auto; background:white; border-radius:10px; padding:20px;">
                     <h2 style="color:#333;">New Comment Alert!</h2>
                     <p style="font-size:16px; color:#444;">
-                        <strong>{data.username}</strong> commented on your post:
+                        <strong>{escape(data.username)}</strong> commented on your post:
                     </p>
                     <blockquote style="font-size:14px; color:#555; border-left:4px solid #eee; margin:10px 0; padding-left:10px;">
-                        {data.comment}
+                        {escape(data.comment)}
                     </blockquote>
                     <hr style="border:none; border-top:1px solid #eee;">
                     <p style="font-size:14px; color:#777;">
