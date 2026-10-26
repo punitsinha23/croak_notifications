@@ -4,6 +4,7 @@ import hmac
 from pydantic import BaseModel, EmailStr
 import smtplib
 from email.message import EmailMessage
+from email.utils import formataddr
 from dotenv import load_dotenv
 import os
 import time
@@ -12,6 +13,7 @@ load_dotenv()
 
 EMAIL = os.getenv("EMAIL")
 PASS = os.getenv("PASSWORD")
+SENDER = formataddr((os.getenv("SENDER_NAME", "Croak"), EMAIL)) if EMAIL else EMAIL
 NOTIFY_SECRET = os.getenv("NOTIFICATIONS_SECRET")
 
 
@@ -41,7 +43,7 @@ class FollowSchema(BaseModel):
 def send_follow_email(data: FollowSchema):
     try:
         msg = EmailMessage()
-        msg["From"] = EMAIL
+        msg["From"] = SENDER
         msg["To"] = data.to
         msg["Subject"] = "🎉 New Follower on Crock!"
 
@@ -88,7 +90,7 @@ class LikeSchema(BaseModel):
 def send_like_email(data: LikeSchema):
     try:
         msg = EmailMessage()
-        msg["From"] = EMAIL
+        msg["From"] = SENDER
         msg["To"] = data.to
         msg["Subject"] = "❤️ Someone Liked Your Post on Crock!"
 
@@ -135,7 +137,7 @@ class OtpSchema(BaseModel):
 def send_otp_email(data: OtpSchema):
     try:
         msg = EmailMessage()
-        msg["From"] = EMAIL
+        msg["From"] = SENDER
         msg["To"] = data.to
         msg["Subject"] = "🔐 Your OTP Code for Verification"
 
@@ -178,7 +180,7 @@ class signUpSchema(BaseModel):
 def send_signup_email(data: signUpSchema):
     try:
         msg = EmailMessage()
-        msg["From"] = EMAIL
+        msg["From"] = SENDER
         msg["To"] = data.to
         msg["Subject"] = "Welcome to Crock! 🎉"
 
@@ -222,7 +224,7 @@ class commentSchema(BaseModel):
 def send_comment_email(data: commentSchema):
     try:
         msg = EmailMessage()
-        msg["From"] = EMAIL 
+        msg["From"] = SENDER 
         msg["To"] = data.to
         msg["Subject"] = "💬 New Comment on Your Post!"
         plain_text = f"{data.username} commented: {data.comment}"
@@ -270,7 +272,7 @@ def send_queued_email(data: QueuedEmailSchema):
     """
     try:
         msg = EmailMessage()
-        msg["From"] = EMAIL
+        msg["From"] = SENDER
         msg["To"] = data.to
         msg["Subject"] = data.subject
         
@@ -295,7 +297,7 @@ def send_queued_email(data: QueuedEmailSchema):
 
 def send_single_email(to, subject, message):
     msg = EmailMessage()
-    msg["From"] = EMAIL
+    msg["From"] = SENDER
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(message)
@@ -320,7 +322,7 @@ def send_bulk(data: BulkEmailSchema):
     for email in data.recipients:
         try:
             msg = EmailMessage()
-            msg["From"] = EMAIL
+            msg["From"] = SENDER
             msg["To"] = email
             msg["Subject"] = data.subject
             msg.set_content(data.message)
@@ -356,7 +358,7 @@ class NewPostSchema(BaseModel):
 def send_new_post_notification(data: NewPostSchema):
     try:
         msg = EmailMessage()
-        msg["From"] = EMAIL
+        msg["From"] = SENDER
         msg["To"] = data.to
         msg["Subject"] = f"📝 {data.author_name} just posted on Croak!"
 
